@@ -31,13 +31,13 @@ def get_img_and_key():
 
 
 def collect_data(seconds, mode='return', path='', epochs=1):
-	
+
 	if mode=='return' or mode=='r':
 		last_time = time.time()
 		img, key = get_img_and_key()
 		img_data = img
 		key_data = [key]
-		
+
 		while(True):
 			if time.time()-last_time >= seconds:
 				break
@@ -49,12 +49,12 @@ def collect_data(seconds, mode='return', path='', epochs=1):
 			# 	break
 			# count_time += used_time
 		key_data = np.array(key_data)
-		
+
 		return img_data, key_data
-	
+
 	elif mode=='collect' or mode=='c':
 		print('[-] Start collecting training data.')
-		
+
 		for i in range(epochs):
 			last_time = time.time()
 			img, key = get_img_and_key()
@@ -64,7 +64,7 @@ def collect_data(seconds, mode='return', path='', epochs=1):
 				img, key = get_img_and_key()
 				img_data = np.vstack((img_data, img))
 				key_data.append(key)
-				
+
 				if time.time() - last_time >= seconds:
 					key_data = np.array(key_data)
 					np.savez(path, img_data=img_data, key_data=key_data)
@@ -77,23 +77,23 @@ def collect_data(seconds, mode='return', path='', epochs=1):
 def send_data(key):
 	key = np.argmax(key)
 	if key == 0:
-		print('Nothing')	
+		print('Nothing')
 	elif key == 1:
-		# keyboard.press('space')	
+		# keyboard.press('space')
 		# # time.sleep(1)
-		# keyboard.release('space')	
+		# keyboard.release('space')
 		keyboard.send('space')
 		print('key: space')
 	elif key == 2:
 		# keyboard.press('down')
-		# # time.sleep(1) 
+		# # time.sleep(1)
 		# keyboard.release('down')
 		keyboard.send('down')
 		print('key: down')
 
 
 
-def build_cnn(input_list, label_list, epochs=10, save_model=False, path=''):
+def build_cnn(input_list, label_list, epochs=10):
 	model = Sequential()
 
 	model.add(Conv2D(
@@ -139,21 +139,38 @@ def build_cnn(input_list, label_list, epochs=10, save_model=False, path=''):
 
 	model.fit(input_list, label_list, epochs=epochs, batch_size=size_batch, verbose=2)
 
-	if save_model:
-		model.save(path)
-
 	return model
 
+
+def save_model(model):
+	while(True):
+		save_flag = input('Save this model? (y/n): ')
+
+		if save_flag == 'Y' or save_flag == 'y':
+			model_name = input('Model name: ')
+			if not ('.h5' in model_name):
+				model_name = model_name + '.h5'
+			model.save(model_name)
+			break
+
+		elif save_flag == 'n' or save_flag == 'N':
+			print('Run without saving the model.')
+			break
+
+		else:
+			continue
 
 
 # Set parameters
 window_place = (0, 250, 955, 415)
 img_shape = (165, 955, 1)
 size_batch = 5
-seconds = 10.0
-model_path = './CM3FD.h5'
-data_path = './traing_data_1.npz'
+seconds = 30.0
+model_path = ''
+data_path = './traing_data_2.npz'
 
+# data_1 -> lack of little tree, can get about 150 (10 sec)
+# data_2 -> keep get loss=0.3, which sometimes occur on data_1, might be the sign of unbalanced data
 
 # prepare()
 # collect_data(seconds, mode='c', path=data_path, epochs=1)
@@ -165,17 +182,19 @@ print(input_list.shape)
 print(label_list.shape)
 
 # build model
-model = build_cnn(input_list, label_list, epochs=10, save_model=False)
-# model = load_model('./CM3FD_0.9947.h5')
+model = build_cnn(input_list, label_list, epochs=10)
+save_model(model)
+# model = load_model(model_path)
+
 
 # Play
 prepare()
 while(True):
 	img = ProcessImg_dino(GetImg(window_place)).reshape(1, 165, 955, 1)
-	move = model.predict(img) 
+	move = model.predict(img)
 	send_data(move)
 
-	
+
 
 
 
@@ -239,4 +258,3 @@ while(True):
 # 	)
 
 # model.fit(input_list, label_list, epochs=10)
-
